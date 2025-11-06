@@ -1,14 +1,47 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Canvas } from '@/components/Canvas';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { Session, User } from '@supabase/supabase-js';
+import { LogOut } from 'lucide-react';
 
 const Index = () => {
   const [sessionId, setSessionId] = useState<string>('');
   const [sessionName, setSessionName] = useState('');
   const [isInSession, setIsInSession] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const navigate = useNavigate();
+
+  // Auth check
+  useEffect(() => {
+    // Set up auth state listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (!session) {
+          navigate('/auth');
+        }
+      }
+    );
+
+    // Then check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (!session) {
+        navigate('/auth');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   // Check for session ID in URL
   useEffect(() => {
@@ -55,14 +88,34 @@ const Index = () => {
     toast.success('Session link copied to clipboard!');
   };
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast.success('Signed out successfully');
+    navigate('/auth');
+  };
+
+  if (!session) {
+    return null; // Loading state while checking auth
+  }
+
   if (!isInSession) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="w-full max-w-md space-y-6 p-8">
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
+          
           <div className="text-center space-y-2">
             <h1 className="text-4xl font-bold">Collaborative Canvas</h1>
             <p className="text-muted-foreground">
               Create a new drawing session or join an existing one
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Signed in as {user?.email}
             </p>
           </div>
 

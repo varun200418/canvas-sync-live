@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCanvas } from '@/hooks/useCanvas';
 import { useCollaborativeCanvas } from '@/hooks/useCollaborativeCanvas';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Brush, Eraser, Trash2, Undo } from 'lucide-react';
+import { Brush, Eraser, Trash2, Undo, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CanvasProps {
@@ -14,6 +16,7 @@ export const Canvas = ({ sessionId }: CanvasProps) => {
   const [currentColor, setCurrentColor] = useState('#000000');
   const [currentWidth, setCurrentWidth] = useState(3);
   const [currentTool, setCurrentTool] = useState<'brush' | 'eraser'>('brush');
+  const navigate = useNavigate();
 
   const {
     userId,
@@ -71,6 +74,12 @@ export const Canvas = ({ sessionId }: CanvasProps) => {
     strokes.forEach(stroke => drawStroke(stroke));
     
     toast.success('Last stroke undone');
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast.success('Signed out successfully');
+    navigate('/auth');
   };
 
   const colors = [
@@ -143,6 +152,9 @@ export const Canvas = ({ sessionId }: CanvasProps) => {
           </Button>
           <Button variant="destructive" size="icon" onClick={handleClear}>
             <Trash2 className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon" onClick={handleSignOut}>
+            <LogOut className="h-4 w-4" />
           </Button>
         </div>
       </div>
