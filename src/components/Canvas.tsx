@@ -5,6 +5,7 @@ import { useCollaborativeCanvas } from '@/hooks/useCollaborativeCanvas';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Brush, Eraser, Trash2, Undo, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -22,6 +23,8 @@ export const Canvas = ({ sessionId }: CanvasProps) => {
     userId,
     userColor,
     onlineUsers,
+    currentUserProfile,
+    userProfiles,
     saveStroke,
     loadStrokes,
     clearAllStrokes,
@@ -137,14 +140,21 @@ export const Canvas = ({ sessionId }: CanvasProps) => {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div
-              className="w-4 h-4 rounded-full"
-              style={{ backgroundColor: userColor }}
-            />
-            <span className="text-sm text-muted-foreground">
-              You ({onlineUsers.length} online)
-            </span>
+          <div className="flex items-center gap-3">
+            <Avatar className="w-8 h-8 border-2" style={{ borderColor: userColor }}>
+              <AvatarImage src={currentUserProfile?.avatar_url || undefined} />
+              <AvatarFallback className="text-xs">
+                {currentUserProfile?.display_name?.slice(0, 2).toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">
+                {currentUserProfile?.display_name || 'You'}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {onlineUsers.length} online
+              </span>
+            </div>
           </div>
 
           <Button variant="outline" size="icon" onClick={handleUndo}>
@@ -173,7 +183,7 @@ export const Canvas = ({ sessionId }: CanvasProps) => {
 
       {/* Info */}
       <div className="p-2 bg-muted text-center text-sm text-muted-foreground">
-        Session ID: {sessionId} | User ID: {userId}
+        Session ID: {sessionId}
       </div>
     </div>
   );

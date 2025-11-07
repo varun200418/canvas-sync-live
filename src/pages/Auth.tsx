@@ -11,13 +11,15 @@ import { Palette } from 'lucide-react';
 
 const authSchema = z.object({
   email: z.string().trim().email({ message: 'Invalid email address' }).max(255, { message: 'Email must be less than 255 characters' }),
-  password: z.string().min(6, { message: 'Password must be at least 6 characters' }).max(100, { message: 'Password must be less than 100 characters' })
+  password: z.string().min(6, { message: 'Password must be at least 6 characters' }).max(100, { message: 'Password must be less than 100 characters' }),
+  displayName: z.string().min(2, { message: 'Display name must be at least 2 characters' }).max(50, { message: 'Display name must be less than 50 characters' }).optional()
 });
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -43,7 +45,7 @@ const Auth = () => {
     
     // Validate input
     try {
-      authSchema.parse({ email, password });
+      authSchema.parse({ email, password, displayName: !isLogin ? displayName : undefined });
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -78,7 +80,10 @@ const Auth = () => {
           email: email.trim(),
           password,
           options: {
-            emailRedirectTo: redirectUrl
+            emailRedirectTo: redirectUrl,
+            data: {
+              display_name: displayName.trim() || email.split('@')[0]
+            }
           }
         });
 
@@ -120,6 +125,23 @@ const Auth = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleAuth} className="space-y-4">
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="displayName">Display Name</Label>
+                <Input
+                  id="displayName"
+                  type="text"
+                  placeholder="Your name"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  disabled={loading}
+                  maxLength={50}
+                />
+                <p className="text-xs text-muted-foreground">
+                  This will be shown to other users on the canvas
+                </p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input

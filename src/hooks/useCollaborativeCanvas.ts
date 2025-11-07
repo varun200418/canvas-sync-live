@@ -3,11 +3,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { StrokeData } from './useCanvas';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
+interface UserProfile {
+  id: string;
+  display_name: string;
+  avatar_url: string | null;
+}
+
 interface CursorPosition {
   userId: string;
   x: number;
   y: number;
   color: string;
+  displayName?: string;
+  avatarUrl?: string | null;
 }
 
 export const useCollaborativeCanvas = (sessionId: string) => {
@@ -18,11 +26,32 @@ export const useCollaborativeCanvas = (sessionId: string) => {
   });
   const [cursors, setCursors] = useState<CursorPosition[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+  const [userProfiles, setUserProfiles] = useState<Map<string, UserProfile>>(new Map());
+  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const operationIndexRef = useRef(0);
 
   useEffect(() => {
     console.log('Setting up collaborative canvas for session:', sessionId);
+
+    // Fetch current user profile
+    const fetchCurrentUserProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+        
+        if (profile) {
+          setCurrentUserProfile(profile);
+          setUserProfiles(prev => new Map(prev).set(user.id, profile));
+        }
+      }
+    };
+
+    fetchCurrentUserProfile();
 
     // Subscribe to drawing strokes
     const strokesChannel = supabase
@@ -57,6 +86,29 @@ export const useCollaborativeCanvas = (sessionId: string) => {
         const users = Object.keys(state);
         console.log('Online users:', users);
         setOnlineUsers(users);
+
+        // Fetch profiles for all online users
+        const fetchProfiles = async () => {
+          const { data: { user: currentUser } } = await supabase.auth.getUser();
+          const userIds = users.filter(id => !userProfiles.has(id) && currentUser);
+          
+          if (userIds.length > 0) {
+            const { data: profiles } = await supabase
+              .from('profiles')
+              .select('*')
+              .in('id', userIds);
+            
+            if (profiles) {
+              setUserProfiles(prev => {
+                const newMap = new Map(prev);
+                profiles.forEach(profile => newMap.set(profile.id, profile));
+                return newMap;
+              });
+            }
+          }
+        };
+        
+        fetchProfiles();
       })
       .on('presence', { event: 'join' }, ({ key }) => {
         console.log('User joined:', key);
@@ -177,6 +229,8 @@ export const useCollaborativeCanvas = (sessionId: string) => {
     userColor,
     cursors,
     onlineUsers,
+    currentUserProfile,
+    userProfiles,
     saveStroke,
     loadStrokes,
     updateCursor,
