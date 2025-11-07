@@ -2,7 +2,7 @@
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/5aedea86-e4f8-4fa7-b37d-1f2238c18e9c
+**URL**: [https://lovable.dev/projects/5aedea86-e4f8-4fa7-b37d-1f2238c18e9c](https://canvas-sync-live.vercel.app/)
 
 ## How can I edit this code?
 
