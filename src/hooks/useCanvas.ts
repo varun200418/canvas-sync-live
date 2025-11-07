@@ -21,6 +21,9 @@ export const useCanvas = (
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawing = useRef(false);
   const currentStroke = useRef<Point[]>([]);
+  const lastTouchDistance = useRef<number | null>(null);
+  const scale = useRef(1);
+  const translatePos = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -44,16 +47,39 @@ export const useCanvas = (
     return () => window.removeEventListener('resize', resizeCanvas);
   }, []);
 
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const getCanvasPoint = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) return { x: 0, y: 0 };
 
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    return {
+      x: (clientX - rect.left - translatePos.current.x) / scale.current,
+      y: (clientY - rect.top - translatePos.current.y) / scale.current
+    };
+  };
 
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const point = getCanvasPoint(e.clientX, e.clientY);
     isDrawing.current = true;
-    currentStroke.current = [{ x, y }];
+    currentStroke.current = [point];
+  };
+
+  const startDrawingTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const point = getCanvasPoint(touch.clientX, touch.clientY);
+      isDrawing.current = true;
+      currentStroke.current = [point];
+    } else if (e.touches.length === 2) {
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const distance = Math.hypot(
+        touch2.clientX - touch1.clientX,
+        touch2.clientY - touch1.clientY
+      );
+      lastTouchDistance.current = distance;
+    }
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -63,18 +89,19 @@ export const useCanvas = (
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    currentStroke.current.push({ x, y });
+    const point = getCanvasPoint(e.clientX, e.clientY);
+    currentStroke.current.push(point);
 
     // Draw the stroke segment
     const prevPoint = currentStroke.current[currentStroke.current.length - 2];
     
+    ctx.save();
+    ctx.translate(translatePos.current.x, translatePos.current.y);
+    ctx.scale(scale.current, scale.current);
+    
     ctx.beginPath();
     ctx.moveTo(prevPoint.x, prevPoint.y);
-    ctx.lineTo(x, y);
+    ctx.lineTo(point.x, point.y);
     
     if (currentTool === 'eraser') {
       ctx.globalCompositeOperation = 'destination-out';
@@ -90,6 +117,64 @@ export const useCanvas = (
     }
     
     ctx.stroke();
+    ctx.restore();
+  };
+
+  const drawTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1 && isDrawing.current) {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (!canvas || !ctx) return;
+
+      const point = getCanvasPoint(touch.clientX, touch.clientY);
+      currentStroke.current.push(point);
+
+      const prevPoint = currentStroke.current[currentStroke.current.length - 2];
+      
+      ctx.save();
+      ctx.translate(translatePos.current.x, translatePos.current.y);
+      ctx.scale(scale.current, scale.current);
+      
+      ctx.beginPath();
+      ctx.moveTo(prevPoint.x, prevPoint.y);
+      ctx.lineTo(point.x, point.y);
+      
+      if (currentTool === 'eraser') {
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.lineWidth = currentWidth;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+      } else {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = currentColor;
+        ctx.lineWidth = currentWidth;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+      }
+      
+      ctx.stroke();
+      ctx.restore();
+    } else if (e.touches.length === 2) {
+      e.preventDefault();
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const distance = Math.hypot(
+        touch2.clientX - touch1.clientX,
+        touch2.clientY - touch1.clientY
+      );
+
+      if (lastTouchDistance.current) {
+        const delta = distance - lastTouchDistance.current;
+        const scaleChange = 1 + delta * 0.01;
+        const newScale = Math.min(Math.max(0.5, scale.current * scaleChange), 3);
+        scale.current = newScale;
+        redrawCanvas();
+      }
+
+      lastTouchDistance.current = distance;
+    }
   };
 
   const stopDrawing = () => {
@@ -111,6 +196,11 @@ export const useCanvas = (
     currentStroke.current = [];
   };
 
+  const stopDrawingTouch = () => {
+    stopDrawing();
+    lastTouchDistance.current = null;
+  };
+
   const clearCanvas = () => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
@@ -124,6 +214,10 @@ export const useCanvas = (
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx || stroke.points.length < 2) return;
 
+    ctx.save();
+    ctx.translate(translatePos.current.x, translatePos.current.y);
+    ctx.scale(scale.current, scale.current);
+    
     ctx.beginPath();
     
     if (stroke.type === 'eraser') {
@@ -145,6 +239,13 @@ export const useCanvas = (
     }
     
     ctx.stroke();
+    ctx.restore();
+  };
+
+  const redrawCanvas = () => {
+    clearCanvas();
+    // Trigger re-render of all strokes by dispatching custom event
+    window.dispatchEvent(new CustomEvent('canvas-redraw'));
   };
 
   return {
@@ -153,6 +254,9 @@ export const useCanvas = (
     draw,
     stopDrawing,
     clearCanvas,
-    drawStroke
+    drawStroke,
+    startDrawingTouch,
+    drawTouch,
+    stopDrawingTouch
   };
 };

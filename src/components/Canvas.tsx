@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Brush, Eraser, Trash2, Undo, LogOut } from 'lucide-react';
+import { Brush, Eraser, Trash2, Undo, LogOut, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CanvasProps {
@@ -37,7 +37,10 @@ export const Canvas = ({ sessionId }: CanvasProps) => {
     draw,
     stopDrawing,
     clearCanvas,
-    drawStroke
+    drawStroke,
+    startDrawingTouch,
+    drawTouch,
+    stopDrawingTouch
   } = useCanvas(saveStroke, currentColor, currentWidth, currentTool);
 
   // Load initial strokes
@@ -58,8 +61,18 @@ export const Canvas = ({ sessionId }: CanvasProps) => {
       drawStroke(strokeData);
     };
 
+    const handleCanvasRedraw = async () => {
+      const strokes = await loadStrokes();
+      strokes.forEach(stroke => drawStroke(stroke));
+    };
+
     window.addEventListener('remote-stroke', handleRemoteStroke as EventListener);
-    return () => window.removeEventListener('remote-stroke', handleRemoteStroke as EventListener);
+    window.addEventListener('canvas-redraw', handleCanvasRedraw);
+    
+    return () => {
+      window.removeEventListener('remote-stroke', handleRemoteStroke as EventListener);
+      window.removeEventListener('canvas-redraw', handleCanvasRedraw);
+    };
   }, []);
 
   const handleClear = async () => {
@@ -141,7 +154,7 @@ export const Canvas = ({ sessionId }: CanvasProps) => {
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
-            <Avatar className="w-8 h-8 border-2" style={{ borderColor: userColor }}>
+            <Avatar className="w-8 h-8 border-2 cursor-pointer" style={{ borderColor: userColor }} onClick={() => navigate('/profile')}>
               <AvatarImage src={currentUserProfile?.avatar_url || undefined} />
               <AvatarFallback className="text-xs">
                 {currentUserProfile?.display_name?.slice(0, 2).toUpperCase() || 'U'}
@@ -157,6 +170,9 @@ export const Canvas = ({ sessionId }: CanvasProps) => {
             </div>
           </div>
 
+          <Button variant="outline" size="icon" onClick={() => navigate('/profile')}>
+            <Settings className="h-4 w-4" />
+          </Button>
           <Button variant="outline" size="icon" onClick={handleUndo}>
             <Undo className="h-4 w-4" />
           </Button>
@@ -173,11 +189,14 @@ export const Canvas = ({ sessionId }: CanvasProps) => {
       <div className="flex-1 relative overflow-hidden">
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 cursor-crosshair bg-white"
+          className="absolute inset-0 cursor-crosshair bg-white touch-none"
           onMouseDown={startDrawing}
           onMouseMove={draw}
           onMouseUp={stopDrawing}
           onMouseLeave={stopDrawing}
+          onTouchStart={startDrawingTouch}
+          onTouchMove={drawTouch}
+          onTouchEnd={stopDrawingTouch}
         />
       </div>
 
