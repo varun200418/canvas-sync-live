@@ -4,70 +4,75 @@
 
 **URL**: [https://lovable.dev/projects/5aedea86-e4f8-4fa7-b37d-1f2238c18e9c](https://canvas-sync-live.vercel.app/)
 
-## How can I edit this code?
+Canvas Sync Live
 
-There are several ways of editing your application.
+A live-synchronised collaborative canvas application built with modern web technologies.
 
-**Use Lovable**
+🚀 Overview
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/5aedea86-e4f8-4fa7-b37d-1f2238c18e9c) and start prompting.
+Canvas Sync Live is a web application that enables real-time collaborative drawing, annotation and sharing on a canvas in the browser. It is built using Vite, TypeScript, React, Tailwind CSS, and the UI components from shadcn-ui.
 
-Changes made via Lovable will be committed automatically to this repo.
+Users can draw, annotate or sketch together and their actions are synchronised live across clients.
 
-**Use your preferred IDE**
+✅ Key Features
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Real-time canvas updates among multiple users
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Drawing, erasing and annotation tools
 
-Follow these steps:
+React + TypeScript frontend with a fast dev workflow
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Tailwind CSS for styling and responsive layout
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Component-based UI via shadcn-ui
 
-# Step 3: Install the necessary dependencies.
-npm i
+Easy deployment via Vercel (or any static host)
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+🧰 Tech Stack
+
+Frontend: React + TypeScript
+
+Build tool: Vite
+
+Styling: Tailwind CSS
+
+UI Components: shadcn-ui
+
+Configuration: ESLint, PostCSS, TSConfig, etc.
+
+📦 Getting Started
+Prerequisites
+
+Node.js (v16+ recommended)
+
+npm (or yarn/pnpm)
+
+Setup & Run Locally
+git clone https://github.com/varun200418/canvas-sync-live.git
+cd canvas-sync-live
+npm install
 npm run dev
-```
 
-**Edit a file directly in GitHub**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+This will launch a development server (e.g., at http://localhost:3000) with hot-reload.
 
-**Use GitHub Codespaces**
+Build for Production
+npm run build
+npm run preview
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+🌐 Deployment
 
-## What technologies are used for this project?
+You can deploy the application by building it, and then hosting the production output on a static hosting platform (for example, Vercel). The project is set up with appropriate config (vite.config.ts, tsconfig.json, tailwind.config.ts) to enable a smooth deploy.
 
-This project is built with:
+📁 Project Structure
+/src           – source code (React components, pages)
+ /supabase     – [if using Supabase backend] configuration & functions  
+/.env          – environment variables (do **not** commit secrets)  
+package.json   
+vite.config.ts
+tailwind.config.ts
+tsconfig.json  
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+🧩 Usage
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/5aedea86-e4f8-4fa7-b37d-1f2238c18e9c) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Once deployed, users can open the application, access the shared canvas session (via URL or room code if applicable), and begin drawing. Changes made by one user appear for all connected users in real-time.
